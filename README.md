@@ -1,5 +1,5 @@
 # AIGame
-um jogo de AI feito com AI e inteligencia humana nao tao intelugente assim 
+um jogo de AI feito com AI e inteligencia humana nao tao inteligente assim 
 
-![Logo do Projeto](jogo-comsol-da-meia-noite.png)
+![Gameplay](jogo-comsol-da-meia-noite.png)
 
