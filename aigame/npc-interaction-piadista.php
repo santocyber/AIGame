@@ -1,6 +1,6 @@
 <?php
 function chatGPTRequest($npcId, $nickname, $conversationHistory) {
-    $openAiToken = '';
+
 
    // Definir a personalidade do NPC com base no ID
     $personalidade = '';

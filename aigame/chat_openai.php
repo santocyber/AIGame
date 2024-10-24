@@ -1,6 +1,6 @@
 <?php
 // Coloque aqui a chave da API da OpenAI
-$api_key = '';
+
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $question = $_POST['question'] ?? '';

@@ -63,8 +63,7 @@ if (isset($input['npcId'], $input['nickname'], $input['mensagem'])) {
     echo json_encode(['error' => 'Dados incompletos.']);
 }
 function chatGPTRequest($npcId, $nickname, $conversationHistory) {
-    $openAiToken = 'sk---s5rvAr-';
-
+    $openAiToken = 
     // Definir a personalidade do NPC com base no nome do NPC
     $personalidade = '';
     switch ($npcId) {

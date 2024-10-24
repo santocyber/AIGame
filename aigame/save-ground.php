@@ -19,11 +19,28 @@ try {
         exit;
     }
 
+    // Verificar se já existe um bloco com essas coordenadas
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM ground WHERE x = :x AND y = :y AND z = :z");
+    $stmt->bindParam(':x', $data['x']);
+    $stmt->bindParam(':y', $data['y']);
+    $stmt->bindParam(':z', $data['z']);
+    $stmt->execute();
+    $count = $stmt->fetchColumn();
+
+    if ($count > 0) {
+        // Se já existe, retornar um erro
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Já existe um bloco de chão nessas coordenadas.'
+        ]);
+        exit;
+    }
+
     // Preparar e executar a query de inserção
     $stmt = $pdo->prepare("INSERT INTO ground (x, y, z, nickname) VALUES (:x, :y, :z, :nickname)");
-    $stmt->bindParam(':x', $data['x'], PDO::PARAM_INT);
-    $stmt->bindParam(':y', $data['y'], PDO::PARAM_INT);
-    $stmt->bindParam(':z', $data['z'], PDO::PARAM_INT);
+    $stmt->bindParam(':x', $data['x']);
+    $stmt->bindParam(':y', $data['y']);
+    $stmt->bindParam(':z', $data['z']);
     $stmt->bindParam(':nickname', $data['nickname'], PDO::PARAM_STR);
 
     if ($stmt->execute()) {

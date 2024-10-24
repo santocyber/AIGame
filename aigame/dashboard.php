@@ -43,6 +43,8 @@ $posicao = $posicao ? json_decode($posicao, true) : ['x' => 0, 'y' => 0, 'z' => 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jogo AI 3D</title>
+    
+    
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -160,7 +162,34 @@ $posicao = $posicao ? json_decode($posicao, true) : ['x' => 0, 'y' => 0, 'z' => 
         
             /* Estilo retro para o ScoreBoard */
 
-        
+        /* Estilo para os botões de zoom */
+#zoomControls {
+    position: fixed;
+    bottom: 15px;
+    right: 130px; /* Ajuste conforme necessário para posicionar ao lado do joystick */
+    display: none;
+}
+
+.zoom-button {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+    border-radius: 25px; /* Botões circulares */
+    background-color: rgba(255, 255, 255, 0.3);
+    color: white;
+    border: 2px solid #999;
+    margin: 5px;
+    box-shadow: 0px 0px 10px rgba(0, 255, 0, 0.8);
+}
+
+.zoom-button:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+.zoom-button:active {
+    background-color: rgba(255, 255, 255, 0.7);
+}
+
     </style>
 </head>
 <body>
@@ -182,9 +211,17 @@ $posicao = $posicao ? json_decode($posicao, true) : ['x' => 0, 'y' => 0, 'z' => 
                 <li class="nav-item">
             <span id="scoreDisplay" class="btn btn-custom mx-2">Tokens GrANA</span>
                 </li>   
+                                <!-- Novo item de Editor -->
+                <li class="nav-item">
+                    <button id="openEditorButton" class="btn btn-custom mx-2">Editor</button>
+                </li>
                 <li class="nav-item">
                     <button id="toggleJoystickButton" class="btn btn-custom mx-2">Ativar Joystick</button>
                 </li>
+                 <li class="nav-item">
+                    <button id="toggleZoomButton" class="btn btn-custom mx-2">Ativar Zoom</button>
+                </li>
+                
                 <li class="nav-item">
                     <button id="toggleCameraButton" class="btn btn-custom mx-2">Toggle Camera</button>
                 </li>
@@ -213,6 +250,13 @@ $posicao = $posicao ? json_decode($posicao, true) : ['x' => 0, 'y' => 0, 'z' => 
     <div id="joystick"></div>
 </div>
 
+
+<!-- Zoom Controls -->
+<div id="zoomControls" class="fixed" style="display: none;">
+    <button id="zoomInButton" class="zoom-button">+</button>
+    <button id="zoomOutButton" class="zoom-button">−</button>
+</div>
+
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -220,13 +264,24 @@ $posicao = $posicao ? json_decode($posicao, true) : ['x' => 0, 'y' => 0, 'z' => 
 <script>
     const jogadorNickname = '<?php echo htmlspecialchars($nickname); ?>';
 </script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
 
-<script src="jogador.js"></script> <!-- Lógica do jogador -->
-<script src="jogo.js"></script> <!-- Lógica do jogo -->
+
+    <!-- Adiciona uma versão ao script JS -->
+    <?php
+        $version = time(); // Use a data/hora atual como versão única para cada carregamento
+    ?>
+    <script src="jogador.js?v=<?php echo $version; ?>"></script>
+    <script src="jogo.js?v=<?php echo $version; ?>"></script>
+    
+
 
 <script>
 
-
+    // Função para abrir o editor.php em uma nova aba
+    document.getElementById('openEditorButton').addEventListener('click', function() {
+        window.open('editor.php', '_blank');
+    });
 
 
     const toggleJoystickButton = document.getElementById('toggleJoystickButton');

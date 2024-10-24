@@ -1,6 +1,3 @@
-
-
-
 document.addEventListener('DOMContentLoaded', function() {
     
     
@@ -9,19 +6,85 @@ document.addEventListener('DOMContentLoaded', function() {
     //######################################################Eventos
     
     
-    document.addEventListener('wheel', function(event) {
-    // event.deltaY é positivo ao rolar para baixo (zoom out) e negativo ao rolar para cima (zoom in)
-    cameraRadius += event.deltaY * 0.05; // Ajuste a sensibilidade conforme necessário
+    
+    // Adiciona um listener para o evento de pressionar tecla
+window.addEventListener('keydown', function(event) {
+    if (event.code === 'Space') { // Verifica se a tecla pressionada foi a barra de espaço
+        addGroundInFrontOfPlayer();
+    }
+});
 
-    // Limitar cameraRadius entre min e max
-    cameraRadius = Math.max(minCameraRadius, Math.min(maxCameraRadius, cameraRadius));
 
-    // Atualizar a posição da câmera
-    if (cameraMode === 3) {
+
+    
+    const toggleZoomButton = document.getElementById('toggleZoomButton');
+const zoomControls = document.getElementById('zoomControls');
+let zoomControlsVisible = false;
+
+toggleZoomButton.addEventListener('click', function () {
+    zoomControlsVisible = !zoomControlsVisible;
+    zoomControls.style.display = zoomControlsVisible ? 'block' : 'none';
+    toggleZoomButton.textContent = zoomControlsVisible ? 'Desativar Zoom' : 'Ativar Zoom';
+});
+
+    
+    const zoomInButton = document.getElementById('zoomInButton');
+const zoomOutButton = document.getElementById('zoomOutButton');
+
+zoomInButton.addEventListener('click', function() {
+    if (cameraMode === 2) {
+        // Modo top-down
+        cameraHeight -= zoomSpeed;
+        cameraHeight = Math.max(minCameraHeight, cameraHeight);
+        setCameraTopDown();
+    } else if (cameraMode === 3) {
+        // Modo orbital
+        cameraRadius -= zoomSpeed;
+        cameraRadius = Math.max(minCameraRadius, cameraRadius);
         setCameraOrbital();
     }
 });
 
+zoomOutButton.addEventListener('click', function() {
+    if (cameraMode === 2) {
+        // Modo top-down
+        cameraHeight += zoomSpeed;
+        cameraHeight = Math.min(maxCameraHeight, cameraHeight);
+        setCameraTopDown();
+    } else if (cameraMode === 3) {
+        // Modo orbital
+        cameraRadius += zoomSpeed;
+        cameraRadius = Math.min(maxCameraRadius, cameraRadius);
+        setCameraOrbital();
+    }
+});
+
+
+
+document.addEventListener('wheel', function(event) {
+    // Ajuste a sensibilidade conforme necessário
+    const zoomSpeed = 0.1;
+
+    if (cameraMode === 2) {
+        // Ajusta a altura da câmera top-down
+        cameraHeight += event.deltaY * zoomSpeed;
+
+        // Limitar cameraHeight entre min e max
+        cameraHeight = Math.max(minCameraHeight, Math.min(maxCameraHeight, cameraHeight));
+
+        // Atualizar a posição da câmera
+        setCameraTopDown();
+    } else if (cameraMode === 3) {
+        // Ajusta o raio da câmera orbital
+        cameraRadius += event.deltaY * zoomSpeed;
+
+        // Limitar cameraRadius entre min e max
+        cameraRadius = Math.max(minCameraRadius, Math.min(maxCameraRadius, cameraRadius));
+
+        // Atualizar a posição da câmera
+        setCameraOrbital();
+    }
+});
 
 
 let initialPinchDistance = null;
@@ -410,6 +473,8 @@ const npcData = {
 };
 
 
+  
+
     // Inicializar cena, câmera, e renderizador
     function init() {
         scene = new THREE.Scene();
@@ -418,18 +483,27 @@ const npcData = {
         renderer.setSize(canvasWidth, canvasHeight);
         document.body.appendChild(renderer.domElement);
         clock = new THREE.Clock();
+        
+
+        player = new Personagem(scene, playerData, [0, 0, 0]);
+        if (player) {
+    scene.remove(player.group);
+}
+
+        inicializarJogador(scene, jogadorNickname);
+
 
         // Adicionar iluminação
         const ambientLight = new THREE.AmbientLight(0xffffff, 1);
         scene.add(ambientLight);
         fetchGroundsFromDatabase();  // Agora os NPCs só serão inicializados após o chão carregar
         // Adicionar chão
-        createGround();
-
+       // createGround();
+    initGroundMesh();
         // Inicializar NPCs
 
         // Inicializar jogador
-        player = new Personagem(scene, playerData, [0, 0, 0]);
+// Exemplo de uso da função
 
 
  // Carregar a posição do jogador do banco de dados
@@ -509,11 +583,17 @@ function animate() {
     
     
     
-    //#######################################################################FUNCAO setCameraThirdPerson
+    //######################################################################################################FUNCAO camera
     let cameraRadius = 10;  // Raio padrão da câmera
 const minCameraRadius = 1;   // Zoom in máximo
 const maxCameraRadius = 70;  // Zoom out máximo
 
+
+let cameraHeight = 20; // Altura padrão da câmera top-down
+const minCameraHeight = 5;  // Altura mínima
+const maxCameraHeight = 100; // Altura máxima
+
+const zoomSpeed = 2; // Ajuste conforme necessário
 
 
       // Função para alternar a câmera
@@ -554,10 +634,10 @@ const maxCameraRadius = 70;  // Zoom out máximo
 function setCameraTopDown() {
     if (!player) return; // Verifica se o jogador está presente
     const playerPosition = player.group.position.clone();
-    const cameraHeight = 20; // Altura fixa da câmera acima do jogador
     camera.position.set(playerPosition.x, playerPosition.y + cameraHeight, playerPosition.z);
     camera.lookAt(playerPosition); // Faz a câmera olhar para o jogador
 }
+
 
 
     
@@ -578,11 +658,6 @@ function setCameraTopDown() {
     // Atualizar a posição da câmera
     camera.position.set(cameraX, cameraY, cameraZ);
     camera.lookAt(playerPosition); // Câmera sempre apontada para o jogador
-}
-
-// Atualizar a posição da câmera no modo orbital
-function updateCamera() {
-    setCameraOrbital();
 }
 
 
@@ -817,7 +892,7 @@ function handleSubmit() {
         .then(response => response.text())
         .then(data => {
             // Atualiza pontuação quando uma interação com NPC ocorre
-            playerEarnedPoints(5); // Ganhar 5 pontos por interagir com um NPC
+            playerEarnedPoints(1); // Ganhar 5 pontos por interagir com um NPC
             
             console.log("Resposta bruta do servidor:", data);
             try {
@@ -1165,13 +1240,7 @@ function createTextSpritegr(text, opacity) {
 }
 
 
-// Função auxiliar para verificar se um bloco de chão já existe na cena
-function isGroundAlreadyInScene(x, y, z) {
-    const existingGrounds = scene.children.filter(object => object.isGround);  // Marcamos os objetos de chão
-    return existingGrounds.some(ground => 
-        ground.position.x === x && ground.position.y === y && ground.position.z === z
-    );
-}
+
 // Capturar o botão 'Adicionar Chão' pelo ID
 const addGroundButton = document.getElementById('addGroundButton');
 
@@ -1305,50 +1374,96 @@ function addNameLabelToCharacter(character, name, yOffset, isNpc = false) {
     nameSprite.position.set(0, yOffset, 0);  // Posicionar acima da cabeça
     character.group.add(nameSprite);  // Adicionar ao grupo do personagem
 }
-
 // Função para adicionar ou atualizar jogadores e NPCs na cena
-function adicionarOuAtualizarJogadorNaCena(nickname, x, y, z, lookX = 0, lookY = 0, lookZ = 0, isNpc = false) {
-    // Verificar se o jogador já existe na cena
-    if (jogadoresNaCena[nickname]) {
-        const jogador = jogadoresNaCena[nickname];
-        const previousPosition = jogador.group.position.clone();
+async function adicionarOuAtualizarJogadorNaCena(nickname, x, y, z, lookX = 0, lookY = 0, lookZ = 0, isNpc = false) {
+    try {
+        // Buscar os dados do personagem no banco de dados pelo nickname
+        const personagemData = await buscarPersonagemPorNickname(nickname);
 
-        // Atualizar a posição e direção do jogador
-        jogador.group.position.set(x, y, z);
-        jogador.group.lookAt(new THREE.Vector3(x + lookX, y + lookY, z + lookZ));  // Atualizar a direção que o jogador está olhando
-        
-        // Verificar se o jogador mudou de posição
-        if (!previousPosition.equals(jogador.group.position)) {
-            jogador.isMoving = true;  // Marcar como em movimento se a posição mudou
+        // Verificar se o jogador já existe na cena
+        if (jogadoresNaCena[nickname]) {
+            const jogador = jogadoresNaCena[nickname];
+            const previousPosition = jogador.group.position.clone();
+
+            // Atualizar a posição e direção do jogador
+            jogador.group.position.set(x, y, z);
+            jogador.group.lookAt(new THREE.Vector3(x + lookX, y + lookY, z + lookZ));  // Atualizar a direção que o jogador está olhando
+
+            // Verificar se o jogador mudou de posição
+            if (!previousPosition.equals(jogador.group.position)) {
+                jogador.isMoving = true;  // Marcar como em movimento se a posição mudou
+            } else {
+                jogador.isMoving = false;  // Parar o movimento se a posição não mudou
+            }
+
+            console.log(`Atualizando posição de ${nickname} para (${x}, ${y}, ${z}) e direção (${lookX}, ${lookY}, ${lookZ})`);
         } else {
-            jogador.isMoving = false;  // Parar o movimento se a posição não mudou
+            // Jogador não existe, cria um novo personagem na posição x, y, z
+            const jogadorData = {
+                "head": { 
+                    "radius": personagemData.head_radius || 0.5, 
+                    "position": [0, personagemData.body_height + 0.75, 0], 
+                    "color": personagemData.head_color || 0xffc0cb 
+                },
+                "neck": { 
+                    "radiusTop": 0.2, 
+                    "radiusBottom": 0.2, 
+                    "height": personagemData.neck_height || 0.5, 
+                    "position": [0, personagemData.body_height - 0.25, 0], 
+                    "color": personagemData.neck_color || 0xffc0cb 
+                },
+                "body": { 
+                    "width": 1, 
+                    "height": personagemData.body_height || 2, 
+                    "depth": 0.5, 
+                    "position": [0, 0, 0], 
+                    "color": personagemData.body_color || 0x8b4513 
+                },
+                "leftArm": { 
+                    "radiusTop": 0.2, 
+                    "radiusBottom": 0.2, 
+                    "height": 1, 
+                    "position": [-0.75, personagemData.body_height / 2, 0], 
+                    "color": personagemData.arm_color || 0xffc0cb 
+                },
+                "rightArm": { 
+                    "radiusTop": 0.2, 
+                    "radiusBottom": 0.2, 
+                    "height": 1, 
+                    "position": [0.75, personagemData.body_height / 2, 0], 
+                    "color": personagemData.arm_color || 0xffc0cb 
+                },
+                "leftLeg": { 
+                    "radiusTop": 0.3, 
+                    "radiusBottom": 0.3, 
+                    "height": 1.5, 
+                    "position": [-0.5, -personagemData.body_height / 2, 0], 
+                    "color": personagemData.leg_color || 0x0000ff 
+                },
+                "rightLeg": { 
+                    "radiusTop": 0.3, 
+                    "radiusBottom": 0.3, 
+                    "height": 1.5, 
+                    "position": [0.5, -personagemData.body_height / 2, 0], 
+                    "color": personagemData.leg_color || 0x0000ff 
+                }
+            };
+
+            // Adicionar o jogador na posição x, y, z
+            const novoJogador = new Personagem(scene, jogadorData, [x, y, z]);
+            novoJogador.isMoving = false;  // Inicialmente, marcar como não em movimento
+            novoJogador.group.lookAt(new THREE.Vector3(x + lookX, y + lookY, z + lookZ));  // Definir a direção inicial
+
+            // Adicionar o nome do jogador ou NPC
+            addNameLabelToCharacter(novoJogador, nickname, 2.5, isNpc);
+
+            // Armazena o jogador na lista de jogadores na cena
+            jogadoresNaCena[nickname] = novoJogador;
+
+            console.log(`Adicionando novo jogador: ${nickname} em (${x}, ${y}, ${z}) e direção (${lookX}, ${lookY}, ${lookZ})`);
         }
-
-      //  console.log(`Atualizando posição de ${nickname} para (${x}, ${y}, ${z}) e direção (${lookX}, ${lookY}, ${lookZ})`);
-    } else {
-        // Jogador não existe, cria um novo personagem na posição x, y, z
-        const jogadorData = {
-            "head": { "radius": 0.5, "position": [0, 1.75, 0], "color": 0xffc0cb },
-            "neck": { "radiusTop": 0.2, "radiusBottom": 0.2, "height": 0.5, "position": [0, 1.25, 0], "color": 0xffc0cb },
-            "body": { "width": 1, "height": 2, "depth": 0.5, "position": [0, 0, 0], "color": 0x8b4513 },
-            "leftArm": { "radiusTop": 0.2, "radiusBottom": 0.2, "height": 1, "position": [-0.75, 0.5, 0], "color": 0xffc0cb },
-            "rightArm": { "radiusTop": 0.2, "radiusBottom": 0.2, "height": 1, "position": [0.75, 0.5, 0], "color": 0xffc0cb },
-            "leftLeg": { "radiusTop": 0.3, "radiusBottom": 0.3, "height": 1.5, "position": [-0.5, -1.5, 0], "color": 0x0000ff },
-            "rightLeg": { "radiusTop": 0.3, "radiusBottom": 0.3, "height": 1.5, "position": [0.5, -1.5, 0], "color": 0x0000ff }
-        };
-
-        // Adicionar o jogador na posição x, y, z
-        const novoJogador = new Personagem(scene, jogadorData, [x, y, z]);
-        novoJogador.isMoving = false;  // Inicialmente, marcar como não em movimento
-        novoJogador.group.lookAt(new THREE.Vector3(x + lookX, y + lookY, z + lookZ));  // Definir a direção inicial
-
-        // Adicionar o nome do jogador ou NPC
-        addNameLabelToCharacter(novoJogador, nickname, 2.5, isNpc);
-
-        // Armazena o jogador na lista de jogadores na cena
-        jogadoresNaCena[nickname] = novoJogador;
-
-       // console.log(`Adicionando novo jogador: ${nickname} em (${x}, ${y}, ${z}) e direção (${lookX}, ${lookY}, ${lookZ})`);
+    } catch (error) {
+        console.error(`Erro ao adicionar ou atualizar o jogador ${nickname}:`, error);
     }
 }
 
@@ -1515,6 +1630,7 @@ function saveGroundPositionToDatabase(vector3) {
             const jsonData = JSON.parse(data);
             if (jsonData.status === 'success') {
                 console.log('Posição do chão salva com sucesso:', jsonData.message);
+                    playerEarnedPoints(0.25); 
 
                 // Buscar os novos blocos de chão recém-adicionados
                 fetchNewGroundsFromDatabase();  // Carregar apenas os blocos adicionados recentemente
@@ -1620,16 +1736,27 @@ function addGroundInFrontOfPlayer() {
    
    // Incrementar a pontuação ao adicionar um bloco de chão
     // Atualizar pontos do jogador por interagir com o NPC
-                    playerEarnedPoints(1); 
     
 
 }
 
 
 
-//######################### funcoes ground addE
+//############################################################################################ funcoes ground addE
+
+
+const renderDistance = 50; // Ajuste conforme necessário
+
+let groundGeometry = new THREE.PlaneGeometry(1, 1);
+let groundMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 });
+let groundMesh;
+let groundCount = 0;
+let maxGroundBlocks = 10000; // Ajuste conforme necessário
+
 // Função para criar o chão e marcar como um objeto de chão
 function createGround(x, y, z) {
+    
+    
     const groundGeometry = new THREE.PlaneGeometry(1, 1);  // Tamanho do novo bloco de chão
     const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 });
     const newGround = new THREE.Mesh(groundGeometry, groundMaterial);
@@ -1638,56 +1765,85 @@ function createGround(x, y, z) {
     newGround.isGround = true;  // Marca como objeto de chão
     return newGround;
 }
-// Variável global para armazenar os blocos de chão
 
-// Função para buscar os blocos de chão do banco de dados
-function fetchGroundsFromDatabase() {
-    fetch('get-grounds.php')
-        .then(response => response.text())  // Usa .text() para ver a resposta completa
-        .then(data => {
-            console.log("Resposta completa do servidor (blocos de chão):", data);  // Log para debug
-            try {
-                const jsonData = JSON.parse(data);  // Tenta converter a resposta para JSON
-                if (jsonData.status === 'success') {
-                    groundBlocks = jsonData.grounds.map(ground => ({
-                        x: ground.x,
-                        y: ground.y,
-                        z: ground.z
-                    }));
-                    updateGroundFromDatabase(jsonData.grounds);  // Atualiza o chão no jogo
-                   initNPCs(jsonData.grounds);  // Inicializa os NPCs depois dos blocos de chão carregados
-                } else {
-                    console.error('Erro ao recuperar os blocos de chão:', jsonData.message);
-                }
-            } catch (error) {
-                console.error('Erro ao processar o JSON:', error, data);  // Exibe o erro e os dados brutos
-            }
-        })
-        .catch(error => {
-            console.error('Erro ao buscar os blocos de chão do banco de dados:', error);  // Loga erro de rede
-        });
+
+function initGroundMesh() {
+    groundMesh = new THREE.InstancedMesh(groundGeometry, groundMaterial, maxGroundBlocks);
+    groundMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); // Permite atualizar a matriz das instâncias
+    scene.add(groundMesh);
 }
 
+
+
+function addGroundInstance(x, y, z) {
+    const dummy = new THREE.Object3D();
+    dummy.position.set(x, y - 2, z);
+    dummy.rotation.x = -Math.PI / 2; // Rotacionar para ficar plano
+    dummy.updateMatrix();
+    groundMesh.setMatrixAt(groundCount++, dummy.matrix);
+    groundMesh.instanceMatrix.needsUpdate = true;
+}
+
+
+function removeDistantGroundBlocks(playerPosition) {
+    groundBlocks = groundBlocks.filter(ground => {
+        const distance = Math.hypot(ground.x - playerPosition.x, ground.z - playerPosition.z);
+        if (distance > renderDistance) {
+            removeGroundInstance(ground); // Função que remove o bloco da cena
+            return false; // Remove do array groundBlocks
+        }
+        return true; // Mantém no array
+    });
+}
+
+function removeGroundInstance(ground) {
+    // Implementar a lógica para remover a instância do InstancedMesh
+    // Isso pode ser um pouco complexo com InstancedMesh, pois requer gerenciamento dos índices das instâncias
+}
+
+function fetchGroundsFromDatabase() {
+    if (!player || !player.group || !player.group.position) {
+        console.error('Player não está definido ao chamar fetchGroundsFromDatabase.');
+        return;
+    }
+
+    const playerPosition = player.group.position;
+
+    fetch('get-grounds.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            x: playerPosition.x,
+            z: playerPosition.z,
+            renderDistance: renderDistance
+        })
+    })
+    .then(response => response.json())
+    .then(jsonData => {
+        if (jsonData.status === 'success') {
+            updateGroundFromDatabase(jsonData.grounds);
+            initNPCs(jsonData.grounds);
+        } else {
+            console.error('Erro ao recuperar os blocos de chão:', jsonData.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erro ao buscar os blocos de chão do banco de dados:', error);
+    });
+}
 
 
 
 
 function updateGroundFromDatabase(grounds) {
-grounds.forEach(ground => {
-    console.log(`Adicionando bloco de chão em: (${ground.x}, ${ground.y}, ${ground.z}) por ${ground.nickname}`);
-    if (!isGroundAlreadyInScene(ground.x, ground.y, ground.z)) {
-     //   const newGround = createGround(ground.x, ground.y, ground.z);
-        const newGround = createGroundWithNickname(ground.x, ground.y, ground.z, ground.nickname);
-
-        scene.add(newGround);
-
-        // Adicionar o nickname transparente sobre o chão
-     // Exemplo de uso ao adicionar um bloco de chão
-
-    }
-});
-
+    grounds.forEach(ground => {
+        if (!isGroundAlreadyInScene(ground.x, ground.y, ground.z)) {
+            addGroundInstance(ground.x, ground.y, ground.z);
+            groundBlocks.push({ x: ground.x, y: ground.y, z: ground.z });
+        }
+    });
 }
+
 // Função para verificar se o jogador está dentro dos blocos de chão permitidos
 // Função para verificar se o jogador está dentro dos blocos de chão permitidos
 function isPlayerInsideGroundBlocks(playerPosition) {
@@ -1699,7 +1855,11 @@ function isPlayerInsideGroundBlocks(playerPosition) {
     });
 }
 
-
+function isGroundAlreadyInScene(x, y, z) {
+    return groundBlocks.some(ground =>
+        ground.x === x && ground.y === y && ground.z === z
+    );
+}
 
 
 //######################################## POSICAO DOS NPCS globais
@@ -1967,6 +2127,9 @@ setInterval(() => {
     loadNpcPositionsFromDatabase();  // Carregar as posições dos NPCs
 }, 1000);
 
+setInterval(() => {
+    fetchGroundsFromDatabase();
+}, 5000); // Atualiza a cada 5 segundos
 
 
 });

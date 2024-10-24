@@ -1,3 +1,93 @@
+
+  function buscarPersonagemPorNickname(nickname) {
+    return fetch(`recuperar_personagem.php?nickname=${nickname}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                return data.personagem;
+            } else {
+                throw new Error('Erro ao buscar os dados do personagem.');
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao buscar personagem:', error);
+        });
+}
+
+  async function inicializarJogador(scene, nickname) {
+    try {
+        // Buscar os dados do personagem pelo nickname
+        const personagemData = await buscarPersonagemPorNickname(nickname);
+
+        // Se os dados forem retornados corretamente, inicializar o personagem
+        player = new Personagem(scene, {
+            body: {
+                width: 1,
+                height: personagemData.body_height,  // Altura do corpo
+                depth: 0.5,
+                color: personagemData.body_color,  // Cor do corpo
+                position: [0, 0, 0]  // Posição do corpo
+            },
+            head: {
+                radius: personagemData.head_radius,  // Tamanho da cabeça
+                color: personagemData.head_color,  // Cor da cabeça
+                position: [0, personagemData.body_height + 0.5, 0]  // Posição da cabeça
+            },
+            neck: {
+                radiusTop: 0.2,
+                radiusBottom: 0.2,
+                height: personagemData.neck_height,  // Tamanho do pescoço
+                color: personagemData.neck_color,  // Cor do pescoço
+                position: [0, personagemData.body_height - 0.5, 0]  // Posição do pescoço
+            },
+            leftArm: {
+                radiusTop: 0.2,
+                radiusBottom: 0.2,
+                height: 1,
+                color: personagemData.arm_color,  // Cor dos braços
+                position: [-0.75, personagemData.body_height / 2, 0]  // Posição ajustada do braço esquerdo
+            },
+            rightArm: {
+                radiusTop: 0.2,
+                radiusBottom: 0.2,
+                height: 1,
+                color: personagemData.arm_color,  // Cor dos braços
+                position: [0.75, personagemData.body_height / 2, 0]  // Posição ajustada do braço direito
+            },
+            leftLeg: {
+                radiusTop: 0.3,
+                radiusBottom: 0.3,
+                height: 1.5,
+                color: personagemData.leg_color,  // Cor das pernas
+                position: [-0.5, -personagemData.body_height / 2, 0]  // Posição ajustada da perna esquerda
+            },
+            rightLeg: {
+                radiusTop: 0.3,
+                radiusBottom: 0.3,
+                height: 1.5,
+                color: personagemData.leg_color,  // Cor das pernas
+                position: [0.5, -personagemData.body_height / 2, 0]  // Posição ajustada da perna direita
+            },
+            hair: {
+                color: personagemData.hair_color || '#000000'  // Cor do cabelo, padrão se não especificado
+            },
+            eyes: {
+                color: personagemData.eye_color || '#0000ff'  // Cor dos olhos, padrão se não especificado
+            },
+            tail: {
+                color: personagemData.tail_color || '#ff0000',  // Cor do rabo, padrão se não especificado
+                length: personagemData.tail_length || 1  // Comprimento do rabo, padrão se não especificado
+            }
+        }, [0, 0, 0]);  // Posição inicial do personagem
+    } catch (error) {
+        console.error('Erro ao inicializar jogador:', error);
+    }
+}
+
+  
+  
+  
+  
     const playerSpeed = 0.2; // Velocidade do jogador
     let movement = { forward: false, backward: false, left: false, right: false }; // Controle de movimentação
     let player, npcSabio, npcPiadista, npcMedico, npcCientista;
@@ -66,7 +156,12 @@ class Personagem {
         group.add(limb);  // Membros são filhos do grupo principal
         group[name] = limb;  // Referência para animar os membros
     }
-
+    
+    
+    
+    
+    
+    
    move(direction) {
         this.isMoving = true;
 

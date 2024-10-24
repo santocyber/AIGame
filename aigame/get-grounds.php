@@ -4,19 +4,31 @@ require 'db_config.php';
 
 header('Content-Type: application/json'); // Assegura que o conteúdo será JSON
 
-try {
-    // Consulta para pegar todos os blocos de chão adicionados
-    $stmt = $pdo->prepare("SELECT nickname, x, y, z FROM ground");
-    $stmt->execute();
+// Receber os dados enviados via POST
+$data = json_decode(file_get_contents('php://input'), true);
+$x = $data['x'];
+$z = $data['z'];
+$renderDistance = $data['renderDistance'];
 
-    // Verifica se encontrou algum resultado
-    if ($stmt->rowCount() > 0) {
-        $grounds = $stmt->fetchAll(PDO::FETCH_ASSOC);  // Busca todos os resultados como array associativo
-        echo json_encode(['status' => 'success', 'grounds' => $grounds]);
-    } else {
-        echo json_encode(['status' => 'error', 'message' => 'Nenhum chão encontrado']);
-    }
-} catch (PDOException $e) {
-    echo json_encode(['status' => 'error', 'message' => 'Erro na consulta: ' . $e->getMessage()]);
-}
+// Converter para números (caso seja necessário)
+$x = floatval($x);
+$z = floatval($z);
+$renderDistance = intval($renderDistance);
+
+// Consultar os blocos de chão dentro do renderDistance
+$sql = "SELECT x, y, z FROM ground WHERE 
+        x BETWEEN (:xMin) AND (:xMax) AND 
+        z BETWEEN (:zMin) AND (:zMax)";
+$stmt = $pdo->prepare($sql);
+$stmt->execute([
+    ':xMin' => $x - $renderDistance,
+    ':xMax' => $x + $renderDistance,
+    ':zMin' => $z - $renderDistance,
+    ':zMax' => $z + $renderDistance
+]);
+
+$grounds = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+echo json_encode(['status' => 'success', 'grounds' => $grounds]);
+
 ?>

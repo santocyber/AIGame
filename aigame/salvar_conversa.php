@@ -3,7 +3,7 @@
 $host = 'localhost';
 $db   = 'aigame';
 $user = 'aigame';
-$pass = '';
+$pass = 'NtaEaPMRpfz4E4BJ';
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
